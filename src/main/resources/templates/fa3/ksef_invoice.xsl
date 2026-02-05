@@ -89,6 +89,7 @@
     <xsl:param name="qrCode"/>
     <xsl:param name="verificationLink"/>
     <xsl:param name="logo"/>
+    <xsl:param name="logoUri"/>
     <xsl:param name="showFooter"/>
     <xsl:param name="duplicateDate"/>
     <xsl:param name="currencyDate"/>
@@ -172,7 +173,13 @@
                             <fo:external-graphic
                                     content-width="80pt"
                                     content-height="80pt"
-                                    src="url('data:image/png;base64,{$logo}')"/>
+                                    src="url('data:image/svg;base64,{$logo}')"/>
+                        </xsl:if>
+                        <xsl:if test="$logoUri != ''">
+                            <fo:external-graphic
+                                    content-width="80pt"
+                                    content-height="80pt"
+                                    src="url('{$logoUri}')"/>
                         </xsl:if>
                     </fo:block>
                     <!-- Numer faktury -->
@@ -672,6 +679,10 @@
                                                     <fo:inline font-weight="600"><xsl:value-of select="key('kLabels', 'nip', $labels)"/>: </fo:inline>
                                                     <xsl:value-of
                                                             select="crd:Fa/crd:Podmiot2K/crd:DaneIdentyfikacyjne/crd:NIP"/>
+                                                </xsl:if>
+                                                <xsl:if test="crd:Fa/crd:Podmiot2K/crd:DaneIdentyfikacyjne/crd:NrID">
+                                                    <fo:inline font-weight="600"><xsl:value-of select="key('kLabels', 'taxId', $labels)"/>: </fo:inline>
+                                                    <xsl:value-of select="crd:Fa/crd:Podmiot2K/crd:DaneIdentyfikacyjne/crd:NrID"/>
                                                 </xsl:if>
                                             </fo:block>
                                             <fo:block text-align="left" padding-bottom="3px">
@@ -1217,14 +1228,23 @@
                         <fo:block font-size="12pt" text-align="left" space-after="2mm">
                             <fo:inline font-weight="bold"><xsl:value-of select="key('kLabels', 'taxRateSummary', $labels)"/></fo:inline>
                         </fo:block>
+                        <xsl:variable name="hasTaxAmountPln" select="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W"/>
                         <fo:table table-layout="fixed" width="100%" border-collapse="separate">
-                            <fo:table-column column-width="20%"/> <!-- Stawka podatku -->
-                            <fo:table-column column-width="20%"/> <!-- Kwota netto-->
-                            <fo:table-column column-width="20%"/> <!-- Kwota podatku -->
-                            <fo:table-column column-width="20%"/> <!-- Kwota brutto -->
-                            <xsl:if test="crd:Fa/crd:P_14_1W|crd:Fa/crd:P_14_2W|crd:Fa/crd:P_14_3W">
-                                <fo:table-column column-width="20%"/> <!-- Kwota podatku PLN -->
-                            </xsl:if>
+                            <xsl:choose>
+                                <xsl:when test="$hasTaxAmountPln">
+                                    <fo:table-column column-width="20%"/> <!-- Stawka podatku -->
+                                    <fo:table-column column-width="20%"/> <!-- Kwota netto-->
+                                    <fo:table-column column-width="20%"/> <!-- Kwota podatku -->
+                                    <fo:table-column column-width="20%"/> <!-- Kwota brutto -->
+                                    <fo:table-column column-width="20%"/> <!-- Kwota podatku PLN -->
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <fo:table-column column-width="25%"/> <!-- Stawka podatku -->
+                                    <fo:table-column column-width="25%"/> <!-- Kwota netto-->
+                                    <fo:table-column column-width="25%"/> <!-- Kwota podatku -->
+                                    <fo:table-column column-width="25%"/> <!-- Kwota brutto -->
+                                </xsl:otherwise>
+                            </xsl:choose>
                             <fo:table-header>
                                 <fo:table-row background-color="#f5f5f5" font-weight="bold">
                                     <fo:table-cell
@@ -1243,7 +1263,7 @@
                                             xsl:use-attribute-sets="tableHeaderFont tableBorder table.cell.padding">
                                         <fo:block><xsl:value-of select="key('kLabels', 'grossAmount', $labels)"/></fo:block>
                                     </fo:table-cell>
-                                    <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                    <xsl:if test="$hasTaxAmountPln">
                                         <fo:table-cell
                                                 xsl:use-attribute-sets="tableHeaderFont tableBorder table.cell.padding">
                                             <fo:block><xsl:value-of select="key('kLabels', 'taxAmountPln', $labels)"/></fo:block>
@@ -1461,7 +1481,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_5) + number(crd:Fa/crd:P_14_5), '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1500,7 +1520,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_6_1) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1540,7 +1560,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_6_2) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1580,7 +1600,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_6_3) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1620,7 +1640,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_7) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1660,7 +1680,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_8) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1700,7 +1720,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_9) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1740,7 +1760,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_10) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -1779,7 +1799,7 @@
                                                         select="translate(format-number(number(crd:Fa/crd:P_13_11) + 0, '#,##0.00'), ',.', ' ,')"/>
                                             </fo:block>
                                         </fo:table-cell>
-                                        <xsl:if test="crd:Fa/crd:P_14_1W | crd:Fa/crd:P_14_2W | crd:Fa/crd:P_14_3W | crd:Fa/crd:P_14_4W">
+                                        <xsl:if test="$hasTaxAmountPln">
                                             <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding"
                                                            text-align="right">
                                                 <fo:block>
@@ -2155,6 +2175,38 @@
                                                 </fo:table-cell>
                                             </xsl:otherwise>
                                         </xsl:choose>
+                                    </fo:table-row>
+                                </xsl:for-each>
+                            </fo:table-body>
+                        </fo:table>
+                    </xsl:if>
+
+                    <!-- Numery WZ -->
+                    <xsl:if test="count(crd:Fa/crd:WZ) > 0">
+                        <fo:block border-bottom="solid 1px grey" space-after="4mm" space-before="4mm"/>
+                        <fo:block font-size="12pt" text-align="left" space-after="3mm">
+                            <fo:inline font-weight="bold"><xsl:value-of select="key('kLabels', 'wz.section', $labels)"/></fo:inline>
+                        </fo:block>
+
+                        <fo:table table-layout="fixed" width="50%" border-collapse="separate">
+                            <fo:table-column column-width="100%"/>
+                            <fo:table-header>
+                                <fo:table-row background-color="#f5f5f5" font-weight="bold">
+                                    <fo:table-cell xsl:use-attribute-sets="tableHeaderFont tableBorder table.cell.padding">
+                                        <fo:block><xsl:value-of select="key('kLabels', 'wz.number', $labels)"/></fo:block>
+                                    </fo:table-cell>
+                                </fo:table-row>
+                            </fo:table-header>
+                            <fo:table-body>
+                                <xsl:for-each select="crd:Fa/crd:WZ">
+                                    <fo:table-row>
+                                        <fo:table-cell xsl:use-attribute-sets="tableFont tableBorder table.cell.padding">
+                                            <fo:block>
+                                                <xsl:call-template name="insertWordBreaks">
+                                                    <xsl:with-param name="text" select="."/>
+                                                </xsl:call-template>
+                                            </fo:block>
+                                        </fo:table-cell>
                                     </fo:table-row>
                                 </xsl:for-each>
                             </fo:table-body>
@@ -2690,6 +2742,39 @@
         </xsl:if>
     </xsl:template>
 
+    <!-- Template do wstawiania punktów łamania w długich tekstach -->
+    <xsl:template name="insertWordBreaks">
+        <xsl:param name="text"/>
+        <xsl:choose>
+            <xsl:when test="contains($text, '/')">
+                <xsl:value-of select="substring-before($text, '/')"/>
+                <xsl:text>/</xsl:text>
+                <xsl:text>&#8203;</xsl:text><!-- zero-width space -->
+                <xsl:call-template name="insertWordBreaks">
+                    <xsl:with-param name="text" select="substring-after($text, '/')"/>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:when test="contains($text, '-')">
+                <xsl:value-of select="substring-before($text, '-')"/>
+                <xsl:text>-</xsl:text>
+                <xsl:text>&#8203;</xsl:text><!-- zero-width space -->
+                <xsl:call-template name="insertWordBreaks">
+                    <xsl:with-param name="text" select="substring-after($text, '-')"/>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:when test="contains($text, '_')">
+                <xsl:value-of select="substring-before($text, '_')"/>
+                <xsl:text>_</xsl:text>
+                <xsl:text>&#8203;</xsl:text><!-- zero-width space -->
+                <xsl:call-template name="insertWordBreaks">
+                    <xsl:with-param name="text" select="substring-after($text, '_')"/>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="$text"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
 
     <xsl:template name="renderBankAccountTable">
         <xsl:param name="bankAccountNode"/>
